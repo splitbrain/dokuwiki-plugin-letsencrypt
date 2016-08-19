@@ -1,0 +1,6 @@
+This plugin will request a single certificate with all listed domains as Subject Alternative Names (SAN). For Domain
+verification, token files will be writen to a ''.well-known/acme-challenge'' directory within the Webserver
+Root Directory. This directory needs to be browsable from all domains! See the [[doku>plugin:letsencrypt|documentation]]
+on how to modify the domain list.
+
+Configuring your webserver to make use of the certificate is **not** part of this plugin!

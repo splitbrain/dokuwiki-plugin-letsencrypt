@@ -5,9 +5,5 @@
  * @author Andreas Gohr <andi@splitbrain.org>
  */
 
-// keys need to match the config setting name
-// $lang['fixme'] = 'FIXME';
-
-
-
-//Setup VIM: ex: et ts=4 :
+$lang['documentroot']    = 'The webserver\'s document root. Leave empty for autodetection.';
+$lang['certificatedir']    = 'Directory where the certificates are to be stored. Empty defaults to <code>&lt;documentroot&gt;/../certs/</code>.';

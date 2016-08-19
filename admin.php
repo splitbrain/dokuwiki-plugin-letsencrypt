@@ -35,12 +35,8 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
     }
 
     /**
-     * Should carry out any processing required by the plugin.
+     * We're executing everything during rendering, to have a live log
      */
-    public function handle() {
-
-    }
-
     public function execute() {
         global $INPUT;
 
@@ -88,10 +84,14 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
                 if($doms) {
                     $this->form_domains();
                 }
-            }else {
+            } else {
                 $this->form_account();
             }
         }
+        echo '</div>';
+
+        echo '<div class="doc_area">';
+        echo $this->locale_xhtml('info');
         echo '</div>';
 
         echo '</div>';
@@ -107,19 +107,18 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
         $certdir = $this->helper->getCertDir();
         $rootdir = $this->helper->getRoot();
 
-
-        echo '<dt>Certificate Directory</dt>';
+        echo '<dt>' . $this->getLang('certdir') . '</dt>';
         if($certdir) {
             echo '<dd><code>' . $certdir . '</code></dd>';
         } else {
-            echo '<dd class="error">Not set up!</dd>';
+            echo '<dd class="error">' . $this->getLang('not setup') . '</dd>';
             $ok = false;
         }
-        echo '<dt>Webserver Root Directory</dt>';
+        echo '<dt>' . $this->getLang('rootdir') . '</dt>';
         if($rootdir) {
             echo '<dd><code>' . $rootdir . '</code></dd>';
         } else {
-            echo '<dd class="error">Not set up!</dd>';
+            echo '<dd class="error">' . $this->getLang('not setup') . '</dd>';
             $ok = false;
         }
 
@@ -132,17 +131,15 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
      * @return bool account available?
      */
     protected function html_account() {
-        echo '<dt>Let\'s Encrypt Account</dt>';
+        echo '<dt>' . $this->getLang('account') . '</dt>';
         if(file_exists($this->helper->getCertDir() . '/_account/private.pem')) {
-            echo '<dd>already set up</dd>';
+            echo '<dd>' . $this->getLang('set up') . '</dd>';
             return true;
         } else {
-            echo '<dd class="error">Not set up!</dd>';
+            echo '<dd class="error">' . $this->getLang('not setup') . '</dd>';
             return false;
         }
     }
-
-
 
     /**
      * List the detected domains
@@ -151,10 +148,10 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
      */
     protected function html_domains() {
         $domains = $this->helper->getAllDomains();
-        echo '<dt>Domains</dt>';
+        echo '<dt>' . $this->getLang('domains') . '</dt>';
 
         if(!$domains) {
-            echo '<dd class="error">None found</dd>';
+            echo '<dd class="error">' . $this->getLang('none') . '</dd>';
             return false;
         }
 
@@ -163,11 +160,11 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
             echo hsc($domain);
 
             if($expire > 30) {
-                echo sprintf(' <span class="valid">' . 'valid for %d days' . '</span>', $expire);
+                echo sprintf(' <span class="valid">' . $this->getLang('valid') . '</span>', $expire);
             } elseif($expire == 0) {
-                echo ' <span class="valid">' . 'no valid certificate' . '</span>';
+                echo ' <span class="invalid">' . $this->getLang('invalid') . '</span>';
             } else {
-                echo sprintf(' <span class="renew">' . 'valid for %d days' . '</span>', $expire);
+                echo sprintf(' <span class="renew">' . $this->getLang('valid') . '</span>', $expire);
             }
             echo '</dd>';
         }
@@ -178,16 +175,15 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
      * Form to create new LE account
      */
     protected function form_account() {
-            $license = 'You agree to the <a href="%s" class="media mediafile mf_pdf">License</a>';
-            $license = sprintf($license, 'https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf');
+        $license = sprintf($this->getLang('license'), 'https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf');
 
-            $form = new Form();
-            $form->addFieldsetOpen('Create new Account');
-            $form->addTextInput('email', 'E-Mail Address')->addClass('block');
-            $form->addDropdown('country', $this->getCountries(), 'Country')->addClass('block');
-            $form->addHTML("<p>$license</p>");
-            $form->addButton('init', 'Create Account')->attr('type', 'submit')->val(1);
-            echo $form->toHTML();
+        $form = new Form();
+        $form->addFieldsetOpen($this->getLang('create account'));
+        $form->addTextInput('email', $this->getLang('email'))->addClass('block');
+        $form->addDropdown('country', $this->getCountries(), $this->getLang('country'))->addClass('block');
+        $form->addHTML("<p>$license</p>");
+        $form->addButton('init', $this->getLang('create account'))->attr('type', 'submit')->val(1);
+        echo $form->toHTML();
     }
 
     /**
@@ -195,13 +191,10 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
      */
     protected function form_domains() {
         $form = new Form();
-        $form->addFieldsetOpen('Sign Domains');
-        $form->addButton('sign', 'Sign Domains')->attr('type', 'submit')->val(1);
+        $form->addFieldsetOpen($this->getLang('get certs'));
+        $form->addButton('sign', $this->getLang('get certs'))->attr('type', 'submit')->val(1);
         echo $form->toHTML();
     }
-
-
-
 
     /**
      * @return array

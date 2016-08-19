@@ -132,7 +132,7 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
      */
     protected function html_account() {
         echo '<dt>' . $this->getLang('account') . '</dt>';
-        if(file_exists($this->helper->getCertDir() . '/_account/private.pem')) {
+        if($this->helper->hasAccount()) {
             echo '<dd>' . $this->getLang('set up') . '</dd>';
             return true;
         } else {

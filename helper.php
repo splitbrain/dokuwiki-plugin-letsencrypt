@@ -7,6 +7,7 @@
  */
 
 // must be run within Dokuwiki
+use dokuwiki\plugin\letsencrypt\classes\CliLogger;
 use dokuwiki\plugin\letsencrypt\classes\HTMLLogger;
 use dokuwiki\plugin\letsencrypt\classes\Lescript;
 
@@ -18,13 +19,20 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
 
     protected $logger;
 
-
-
+    /**
+     * switch to HTML logging
+     */
     public function setHTMLLogger() {
         $this->logger = new HTMLLogger();
     }
 
-
+    /**
+     * switch to Console logging
+     * @param DokuCLI $cli
+     */
+    public function setCliLogger($cli) {
+        $this->logger = new CliLogger($cli);
+    }
 
     /**
      * Get all know domains of this wiki (includes all animals)
@@ -95,7 +103,13 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
         $info = $this->getCertInfo();
         $result = array();
         foreach($domains as $domain) {
-            $result[$domain] = $info ? $info['expires_in_days'] : 0;
+            if($info['expires_in_days'] && in_array($domain, $info['domains'])) {
+                $expire = $info['expires_in_days'];
+            } else {
+                $expire = 0;
+            }
+
+            $result[$domain] = $expire;
         }
 
         return $result;
@@ -109,10 +123,17 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
      */
     public function domainFilter($domain) {
         if(empty($domain)) return false;
-        if($domain == 'localhost') return false;
+        if(strpos($domain, '.') === false) return false; // need at least one dot
         if($domain == 'localhost.localdomain') return false;
         if(preg_match('/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/', $domain)) return false;
         return true;
+    }
+
+    /**
+     * @return bool is the account set up already?
+     */
+    public function hasAccount() {
+        return file_exists($this->getCertDir() . '/_account/private.pem');
     }
 
     public function checkDir() {
@@ -146,7 +167,7 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
         $lescript->state = $country;
         $email = trim($email);
         if($email) {
-            $lescript->contact = array('mailto:'.$email);
+            $lescript->contact = array('mailto:' . $email);
         }
 
         $lescript->initAccount();

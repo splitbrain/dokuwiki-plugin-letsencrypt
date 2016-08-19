@@ -9,25 +9,24 @@ class Lescript
     public $license = 'https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf';
     public $countryCode = 'CZ';
     public $state = "Czech Republic";
+    public $challenge = 'http-01'; // http-01 challange only
+    public $contact = array(); // optional
+    // public $contact = array("mailto:cert-admin@example.com", "tel:+12025551212")
 
-    private $certificatesDir;
-    private $webRootDir;
+    protected $certificatesDir;
+    protected $webRootDir;
 
     /** @var \Psr\Log\LoggerInterface */
-    private $logger;
-    private $client;
-    private $accountKeyPath;
+    protected $logger;
+    protected $client;
+    protected $accountKeyPath;
 
     public function __construct($certificatesDir, $webRootDir, $logger = null, ClientInterface $client = null)
     {
         $this->certificatesDir = $certificatesDir;
         $this->webRootDir = $webRootDir;
         $this->logger = $logger;
-        if($client !== null) {
-            $this->client = $client;
-        } else {
-            $this->client = new Client($this->ca);
-        }
+        $this->client = $client ? $client : new Client($this->ca);
         $this->accountKeyPath = $certificatesDir . '/_account/private.pem';
     }
 
@@ -76,9 +75,9 @@ class Lescript
                 throw new \RuntimeException("HTTP Challenge for $domain is not available. Whole response: ".json_encode($response));
             }
 
-            // choose http-01 challange only
-            $challenge = array_reduce($response['challenges'], function ($v, $w) {
-                return $v ? $v : ($w['type'] == 'http-01' ? $w : false);
+            $self = $this;
+            $challenge = array_reduce($response['challenges'], function ($v, $w) use (&$self) {
+                return $v ? $v : ($w['type'] == $self->challenge ? $w : false);
             });
             if (!$challenge) throw new \RuntimeException("HTTP Challenge for $domain is not available. Whole response: " . json_encode($response));
 
@@ -127,7 +126,7 @@ class Lescript
                 $challenge['uri'],
                 array(
                     "resource" => "challenge",
-                    "type" => "http-01",
+                    "type" => $this->challenge,
                     "keyAuthorization" => $payload,
                     "token" => $challenge['token']
                 )
@@ -227,7 +226,7 @@ class Lescript
         $this->log("Done !!§§!");
     }
 
-    private function readPrivateKey($path)
+    protected function readPrivateKey($path)
     {
         if (($key = openssl_pkey_get_private('file://' . $path)) === FALSE) {
             throw new \RuntimeException(openssl_error_string());
@@ -236,28 +235,33 @@ class Lescript
         return $key;
     }
 
-    private function parsePemFromBody($body)
+    protected function parsePemFromBody($body)
     {
         $pem = chunk_split(base64_encode($body), 64, "\n");
         return "-----BEGIN CERTIFICATE-----\n" . $pem . "-----END CERTIFICATE-----\n";
     }
 
-    private function getDomainPath($domain)
+    protected function getDomainPath($domain)
     {
         return $this->certificatesDir . '/' . $domain . '/';
     }
 
-    private function postNewReg()
+    protected function postNewReg()
     {
         $this->log('Sending registration to letsencrypt server');
 
+        $data = array('resource' => 'new-reg', 'agreement' => $this->license);
+        if(!$this->contact) {
+            $data['contact'] = $this->contact;
+        }
+
         return $this->signedRequest(
             '/acme/new-reg',
-            array('resource' => 'new-reg', 'agreement' => $this->license)
+            $data
         );
     }
 
-    private function generateCSR($privateKey, array $domains)
+    protected function generateCSR($privateKey, array $domains)
     {
         $domain = reset($domains);
         $san = implode(",", array_map(function ($dns) {
@@ -308,7 +312,7 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment');
         return $this->getCsrContent($csrPath);
     }
 
-    private function getCsrContent($csrPath) {
+    protected function getCsrContent($csrPath) {
         $csr = file_get_contents($csrPath);
 
         preg_match('~REQUEST-----(.*)-----END~s', $csr, $matches);
@@ -316,7 +320,7 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment');
         return trim(Base64UrlSafeEncoder::encode(base64_decode($matches[1])));
     }
 
-    private function generateKey($outputDirectory)
+    protected function generateKey($outputDirectory)
     {
         $res = openssl_pkey_new(array(
             "private_key_type" => OPENSSL_KEYTYPE_RSA,
@@ -336,7 +340,7 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment');
         file_put_contents($outputDirectory.'/public.pem', $details['key']);
     }
 
-    private function signedRequest($uri, array $payload)
+    protected function signedRequest($uri, array $payload)
     {
         $privateKey = $this->readPrivateKey($this->accountKeyPath);
         $details = openssl_pkey_get_details($privateKey);
@@ -391,7 +395,6 @@ interface ClientInterface
      * @param string $base the ACME API base all relative requests are sent to
      */
     public function __construct($base);
-
     /**
      * Send a POST request
      *
@@ -400,13 +403,11 @@ interface ClientInterface
      * @return array|string the parsed JSON response, raw response on error
      */
     public function post($url, $data);
-
     /**
      * @param string $url URL to request via get
      * @return array|string the parsed JSON response, raw response on error
      */
     public function get($url);
-
     /**
      * Returns the Replay-Nonce header of the last request
      *
@@ -416,7 +417,6 @@ interface ClientInterface
      * @return mixed
      */
     public function getLastNonce();
-
     /**
      * Return the Location header of the last request
      *
@@ -425,14 +425,12 @@ interface ClientInterface
      * @return string|null
      */
     public function getLastLocation();
-
     /**
      * Return the HTTP status code of the last request
      *
      * @return int
      */
     public function getLastCode();
-
     /**
      * Get all Link headers of the last request
      *
@@ -441,20 +439,19 @@ interface ClientInterface
     public function getLastLinks();
 }
 
-
 class Client implements ClientInterface
 {
-    private $lastCode;
-    private $lastHeader;
+    protected $lastCode;
+    protected $lastHeader;
 
-    private $base;
+    protected $base;
 
     public function __construct($base)
     {
         $this->base = $base;
     }
 
-    private function curl($method, $url, $data = null)
+    protected function curl($method, $url, $data = null)
     {
         $headers = array('Accept: application/json', 'Content-Type: application/json');
         $handle = curl_init();

@@ -92,7 +92,13 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
         $excludes = array_filter($excludes, array($this, 'domainFilter'));
         $domains = array_diff($domains, $excludes);
 
-        return $domains;
+        $info = $this->getCertInfo();
+        $result = array();
+        foreach($domains as $domain) {
+            $result[$domain] = $info ? $info['expires_in_days'] : 0;
+        }
+
+        return $result;
     }
 
     /**
@@ -126,23 +132,40 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
         return $ok;
     }
 
-
-    public function register($code, $country) {
+    /**
+     * Register a new LE account
+     *
+     * @param string $code
+     * @param string $country
+     * @param string $email
+     */
+    public function register($code, $country, $email) {
+        set_time_limit(0);
         $lescript = new Lescript($this->getCertDir(), $this->getRoot(), $this->logger);
         $lescript->countryCode = $code;
         $lescript->state = $country;
+        $email = trim($email);
+        if($email) {
+            $lescript->contact = array('mailto:'.$email);
+        }
 
         $lescript->initAccount();
     }
 
+    /**
+     * Creates or updates the certificates
+     */
     public function updateCerts() {
+        set_time_limit(0);
         $lescript = new Lescript($this->getCertDir(), $this->getRoot(), $this->logger);
-
-        $lescript->signDomains($this->getAllDomains());
-
+        $lescript->signDomains(array_keys($this->getAllDomains()));
     }
 
-
+    /**
+     * The directory to store certificates
+     *
+     * @return string|null null if none is set or can be found
+     */
     public function getCertDir() {
         $certdir = $this->getConf('certificatedir');
         if($certdir) return $certdir;
@@ -154,6 +177,22 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
         return null;
     }
 
+    /**
+     * Get info on our certificate
+     *
+     * @return array|null
+     */
+    protected function getCertInfo() {
+        $lescript = new Lescript($this->getCertDir(), $this->getRoot(), $this->logger);
+        $data = $lescript->getCertInfo('wiki');
+        return $data;
+    }
+
+    /**
+     * The webserver root directory
+     *
+     * @return string|null null if none is set or detected
+     */
     public function getRoot() {
         // did the user tell us?
         $root = $this->getConf('documentroot');

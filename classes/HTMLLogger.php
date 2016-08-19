@@ -2,11 +2,15 @@
 
 namespace dokuwiki\plugin\letsencrypt\classes;
 
+/**
+ * Minimal logger that writes directly to HTML and flushes the buffers
+ */
 class HTMLLogger {
-    public $logs = array();
-
     function __call($name, $arguments) {
-        echo date('Y-m-d H:i:s') . " [$name] ${arguments[0]}<br />";
+        $name = substr($name, 0, 1);
+        $msg = hsc($arguments[0]);
+        echo "[$name] " . date('H:i:s') . " $msg<br />";
         echo str_pad('', 50000, ' ');
+        tpl_flush();
     }
 }

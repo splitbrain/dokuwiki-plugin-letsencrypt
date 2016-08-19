@@ -33,6 +33,7 @@ class LetsEncrypt extends DokuCLI {
         $options->registerOption('update', 'Update the certificates', 'u');
         $options->registerOption('force', 'Force a certificate update even when none is needed', 'f');
         $options->registerOption('run-on-update', 'Run this command when the certificate has been updated', 'r', 'command');
+        $options->registerOption('quiet', 'Do not print anything except fatal errors (and whatever the run-on-update program outputs)', 'q');
     }
 
     /**
@@ -48,16 +49,18 @@ class LetsEncrypt extends DokuCLI {
         if(!$this->helper->getCertDir()) $this->fatal('no certificate directory set');
         if(!$this->helper->hasAccount()) $this->fatal('no letsencrypt account set up, yet');
 
+        $quiet = $options->getOpt('quiet');
+
         $domains = $this->helper->getAllDomains();
-        $this->printDomains($domains);
+        if(!$quiet) $this->printDomains($domains);
 
         if($options->getOpt('update')) {
             if(!$options->getOpt('force') && !$this->updateNeeded($domains)) {
-                $this->success('No update needed');
+                if(!$quiet) $this->success('No update needed');
                 exit(0);
             }
 
-            $this->helper->setCliLogger($this);
+            if(!$quiet) $this->helper->setCliLogger($this);
             $this->helper->updateCerts();
             if($options->getOpt('run-on-update')) {
                 passthru($options->getOpt('run-on-update'), $return);

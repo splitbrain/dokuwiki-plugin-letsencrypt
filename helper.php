@@ -10,6 +10,7 @@
 use dokuwiki\plugin\letsencrypt\classes\CliLogger;
 use dokuwiki\plugin\letsencrypt\classes\HTMLLogger;
 use dokuwiki\plugin\letsencrypt\classes\Lescript;
+use dokuwiki\plugin\letsencrypt\classes\NullLogger;
 
 if(!defined('DOKU_INC')) die();
 
@@ -18,6 +19,13 @@ require_once __DIR__ . '/Lescript.php';
 class helper_plugin_letsencrypt extends DokuWiki_Plugin {
 
     protected $logger;
+
+    /**
+     * helper_plugin_letsencrypt constructor.
+     */
+    public function __construct() {
+        $this->logger = new NullLogger();
+    }
 
     /**
      * switch to HTML logging

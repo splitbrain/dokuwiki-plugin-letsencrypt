@@ -35,6 +35,14 @@ class admin_plugin_letsencrypt extends DokuWiki_Admin_Plugin {
     }
 
     /**
+     * we're doing nothing here
+     *
+     * @inheritDoc
+     */
+    public function handle() {
+    }
+
+    /**
      * We're executing everything during rendering, to have a live log
      */
     public function execute() {

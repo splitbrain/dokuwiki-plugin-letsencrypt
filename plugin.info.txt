@@ -1,7 +1,7 @@
 base   letsencrypt
 author Andreas Gohr
 email  andi@splitbrain.org
-date   2017-03-08
+date   2019-02-02
 name   letsencrypt plugin
 desc   Request letsencrypt SSL certificates for your wiki
 url    http://www.dokuwiki.org/plugin:letsencrypt

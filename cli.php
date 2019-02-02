@@ -1,10 +1,13 @@
 #!/usr/bin/php
 <?php
+
+use splitbrain\phpcli\Options;
+
 if(!defined('DOKU_INC')) define('DOKU_INC', realpath(__DIR__ . '/../../../') . '/');
 define('NOSESSION', 1);
 require_once(DOKU_INC . 'inc/init.php');
 
-class LetsEncrypt extends DokuCLI {
+class LetsEncrypt extends DokuWiki_CLI_Plugin {
 
     /** @var helper_plugin_letsencrypt $helper */
     protected $helper;
@@ -23,7 +26,7 @@ class LetsEncrypt extends DokuCLI {
      * @param DokuCLI_Options $options
      * @return void
      */
-    protected function setup(DokuCLI_Options $options) {
+    protected function setup(Options $options) {
         $options->setHelp(
             'This is a command line interface to the letsencrypt plugin. It allows renewing ' .
             'certificates from cron jobs etc.' . "\n" .
@@ -44,7 +47,7 @@ class LetsEncrypt extends DokuCLI {
      * @param DokuCLI_Options $options
      * @return void
      */
-    protected function main(DokuCLI_Options $options) {
+    protected function main(Options $options) {
         if(!$this->helper->getRoot()) $this->fatal('no webserver root directory set or detected');
         if(!$this->helper->getCertDir()) $this->fatal('no certificate directory set');
         if(!$this->helper->hasAccount()) $this->fatal('no letsencrypt account set up, yet');
@@ -91,7 +94,7 @@ class LetsEncrypt extends DokuCLI {
             } elseif($expire == 0) {
                 $this->colors->ptln(sprintf("%-50s" . $this->helper->getLang('invalid'), $domain), 'red');
             } else {
-                $this->colors->ptln(sprintf("%-50s" . $this->helper->getLang('valid'), $expire), 'yellow');
+                $this->colors->ptln(sprintf("%-50s" . $this->helper->getLang('valid'), $domain, $expire), 'yellow');
             }
         }
     }

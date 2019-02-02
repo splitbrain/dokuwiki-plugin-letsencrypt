@@ -94,7 +94,7 @@ class LetsEncrypt extends DokuWiki_CLI_Plugin {
             } elseif($expire == 0) {
                 $this->colors->ptln(sprintf("%-50s" . $this->helper->getLang('invalid'), $domain), 'red');
             } else {
-                $this->colors->ptln(sprintf("%-50s" . $this->helper->getLang('valid'), $expire), 'yellow');
+                $this->colors->ptln(sprintf("%-50s" . $this->helper->getLang('valid'), $domain, $expire), 'yellow');
             }
         }
     }

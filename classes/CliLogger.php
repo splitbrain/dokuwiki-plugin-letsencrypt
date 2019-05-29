@@ -9,7 +9,12 @@ class CliLogger {
 
     protected $cli;
 
-    public function __construct(\DokuCLI $cli) {
+    /**
+     * CliLogger constructor.
+     *
+     * @param \DokuCLI|\splitbrain\phpcli\CLI $cli
+     */
+    public function __construct($cli) {
         $this->cli = $cli;
     }
 

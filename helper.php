@@ -36,7 +36,7 @@ class helper_plugin_letsencrypt extends DokuWiki_Plugin {
 
     /**
      * switch to Console logging
-     * @param DokuCLI $cli
+     * @param \DokuCLI|\splitbrain\phpcli\CLI $cli
      */
     public function setCliLogger($cli) {
         $this->logger = new CliLogger($cli);
